@@ -5,7 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"go.mau.fi/whatsmeow/proto/waSyncAction"
 	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestCreateCallLifecyclePayload(t *testing.T) {
@@ -36,5 +39,28 @@ func TestCreateCallLifecyclePayload(t *testing.T) {
 	}
 	if _, ok := noReason["device_id"]; ok {
 		t.Fatalf("empty device_id must be omitted")
+	}
+}
+
+func TestCreateCallLogPayload(t *testing.T) {
+	rec := &waSyncAction.CallLogRecord{
+		CallID:         proto.String("call-9"),
+		CallCreatorJID: proto.String("628111@s.whatsapp.net"),
+		CallResult:     waSyncAction.CallLogRecord_CONNECTED.Enum(),
+		Duration:       proto.Int64(19),
+		StartTime:      proto.Int64(1795485490),
+		IsIncoming:     proto.Bool(true),
+		IsVideo:        proto.Bool(false),
+	}
+	body := createCallLogPayload(context.Background(), rec, "dev-1", nil)
+	p := body["payload"].(map[string]any)
+	if body["event"] != "call.log" || p["call_id"] != "call-9" || p["call_result"] != "connected" || p["duration"] != int64(19) {
+		t.Fatalf("unexpected call.log: %#v", body)
+	}
+	if p["from"] != "628111@s.whatsapp.net" || p["is_incoming"] != true || p["is_video"] != false {
+		t.Fatalf("unexpected call.log payload: %#v", p)
+	}
+	if callLogRecordOf(&events.AppState{Index: []string{"mute", "x"}}) != nil {
+		t.Fatalf("non call_log mutation must be ignored")
 	}
 }
