@@ -51,6 +51,9 @@ func TestCreateCallLogPayload(t *testing.T) {
 		StartTime:      proto.Int64(1795485490),
 		IsIncoming:     proto.Bool(true),
 		IsVideo:        proto.Bool(false),
+		Participants: []*waSyncAction.CallLogRecord_ParticipantInfo{
+			{UserJID: proto.String("628222@s.whatsapp.net"), CallResult: waSyncAction.CallLogRecord_CONNECTED.Enum()},
+		},
 	}
 	body := createCallLogPayload(context.Background(), rec, "dev-1", nil)
 	p := body["payload"].(map[string]any)
@@ -59,6 +62,10 @@ func TestCreateCallLogPayload(t *testing.T) {
 	}
 	if p["from"] != "628111@s.whatsapp.net" || p["is_incoming"] != true || p["is_video"] != false {
 		t.Fatalf("unexpected call.log payload: %#v", p)
+	}
+	parts := p["participants"].([]map[string]any)
+	if len(parts) != 1 || parts[0]["jid"] != "628222@s.whatsapp.net" || parts[0]["call_result"] != "connected" {
+		t.Fatalf("unexpected participants: %#v", parts)
 	}
 	if callLogRecordOf(&events.AppState{Index: []string{"mute", "x"}}) != nil {
 		t.Fatalf("non call_log mutation must be ignored")
