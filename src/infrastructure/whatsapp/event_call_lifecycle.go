@@ -2,10 +2,12 @@ package whatsapp
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waSyncAction"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 )
@@ -64,6 +66,59 @@ func createCallLifecyclePayload(ctx context.Context, eventName string, meta type
 		"timestamp": meta.Timestamp.Format(time.RFC3339),
 		"payload":   payload,
 	}
+	if deviceID != "" {
+		body["device_id"] = deviceID
+	}
+	return body
+}
+
+// callLogRecordOf returns the call log record carried by a "call_log" app-state mutation.
+func callLogRecordOf(evt *events.AppState) *waSyncAction.CallLogRecord {
+	if len(evt.Index) == 0 || evt.Index[0] != "call_log" {
+		return nil
+	}
+	return evt.GetCallLogAction().GetCallLogRecord()
+}
+
+// handleCallLog forwards call.log: the phone's final call record (result, duration, video),
+// which unlike the live call.* events also covers how a connected call ended.
+func handleCallLog(ctx context.Context, rec *waSyncAction.CallLogRecord, deviceID string, client *whatsmeow.Client) {
+	go func() {
+		webhookCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancel()
+		payload := createCallLogPayload(webhookCtx, rec, deviceID, client)
+		if err := forwardPayloadToConfiguredWebhooks(webhookCtx, payload, "call.log"); err != nil {
+			logrus.Errorf("Failed to forward call.log to webhook: %v", err)
+		}
+	}()
+}
+
+func createCallLogPayload(ctx context.Context, rec *waSyncAction.CallLogRecord, deviceID string, client *whatsmeow.Client) map[string]any {
+	payload := map[string]any{
+		"call_id":     rec.GetCallID(),
+		"call_result": strings.ToLower(rec.GetCallResult().String()),
+		"duration":    rec.GetDuration(),
+		"is_incoming": rec.GetIsIncoming(),
+		"is_video":    rec.GetIsVideo(),
+		"call_type":   strings.ToLower(rec.GetCallType().String()),
+	}
+	if creator, err := types.ParseJID(rec.GetCallCreatorJID()); err == nil && !creator.IsEmpty() {
+		if creator.Server == "lid" {
+			payload["from_lid"] = creator.ToNonAD().String()
+		}
+		payload["from"] = NormalizeJIDFromLID(ctx, creator, client).ToNonAD().String()
+	}
+	if group, err := types.ParseJID(rec.GetGroupJID()); err == nil && !group.IsEmpty() {
+		payload["group_jid"] = group.ToNonAD().String()
+	}
+
+	startedAt := time.Now()
+	if rec.StartTime != nil {
+		startedAt = time.Unix(rec.GetStartTime(), 0)
+	}
+	payload["start_time"] = startedAt.UTC().Format(time.RFC3339)
+
+	body := map[string]any{"event": "call.log", "timestamp": startedAt.UTC().Format(time.RFC3339), "payload": payload}
 	if deviceID != "" {
 		body["device_id"] = deviceID
 	}

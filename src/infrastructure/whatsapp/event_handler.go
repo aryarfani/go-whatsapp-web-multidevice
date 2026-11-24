@@ -387,6 +387,10 @@ func handleReceipt(ctx context.Context, evt *events.Receipt, deviceID string, cl
 func handleAppState(ctx context.Context, evt *events.AppState, deviceID string, client *whatsmeow.Client) {
 	log.Debugf("App state event: %+v / %+v", evt.Index, evt.SyncActionValue)
 
+	if rec := callLogRecordOf(evt); rec != nil {
+		handleCallLog(ctx, rec, deviceID, client)
+	}
+
 	if isLabelAppState(evt) {
 		go func(e *events.AppState, c *whatsmeow.Client) {
 			webhookCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
