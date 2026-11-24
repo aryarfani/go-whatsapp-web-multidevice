@@ -32,6 +32,9 @@ The following events can be received via webhook:
 | `newsletter.message` | Live counter updates of a subscribed newsletter         |
 | `newsletter.mute`    | Newsletter mute setting changed                         |
 | `call.offer`         | Incoming call received                                  |
+| `call.accept`        | A call was answered (by this account's device, e.g. the phone) |
+| `call.terminate`     | A call ended; `payload.reason` carries WhatsApp's reason |
+| `call.reject`        | A call was rejected                                     |
 | `device.logged_out`  | The device was logged out, with WhatsApp's reason       |
 | `device.temporary_ban` | WhatsApp temporarily banned the account               |
 | `device.reachout_timelock` | WhatsApp restricted the account from starting new chats |
@@ -197,7 +200,7 @@ All webhook payloads follow a consistent top-level structure:
 
 | **Field**    | **Type** | **Description**                                                                                                     |
 |--------------|----------|---------------------------------------------------------------------------------------------------------------------|
-| `event`      | string   | Event type: `message`, `message.reaction`, `message.revoked`, `message.edited`, `message.ack`, `message.deleted`, `chat_presence`, `presence`, `group.participants`, `group.info`, `group.joined`, `label.edit`, `label.association`, `newsletter.joined`, `newsletter.left`, `newsletter.message`, `newsletter.mute`, `call.offer`, `device.logged_out`, `device.temporary_ban`, `device.reachout_timelock` |
+| `event`      | string   | Event type: `message`, `message.reaction`, `message.revoked`, `message.edited`, `message.ack`, `message.deleted`, `chat_presence`, `presence`, `group.participants`, `group.info`, `group.joined`, `label.edit`, `label.association`, `newsletter.joined`, `newsletter.left`, `newsletter.message`, `newsletter.mute`, `call.offer`, `call.accept`, `call.terminate`, `call.reject`, `device.logged_out`, `device.temporary_ban`, `device.reachout_timelock` |
 | `device_id`  | string   | JID of the device that received this event (e.g., `628123456789@s.whatsapp.net`)                                    |
 | `session_id` | string   | ID of the emitting slot. Device events always set this field; auto-created slots may use a WhatsApp JID. Other events may omit it when the JID cannot be mapped to a session. |
 | `payload`    | object   | Event-specific payload data                                                                                         |
