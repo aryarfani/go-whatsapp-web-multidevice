@@ -87,6 +87,12 @@ func handler(ctx context.Context, instance *DeviceInstance, rawEvt any) {
 		handleNewsletterMuteChange(ctx, evt, instance.JID(), client)
 	case *events.CallOffer:
 		handleCallOffer(ctx, evt, chatStorageRepo, instance.JID(), client)
+	case *events.CallAccept:
+		handleCallAccept(ctx, evt, instance.JID(), client)
+	case *events.CallTerminate:
+		handleCallTerminate(ctx, evt, instance.JID(), client)
+	case *events.CallReject:
+		handleCallReject(ctx, evt, instance.JID(), client)
 	}
 
 	instance.UpdateStateFromClient()
