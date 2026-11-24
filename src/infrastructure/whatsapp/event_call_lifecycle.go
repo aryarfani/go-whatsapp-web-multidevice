@@ -112,6 +112,26 @@ func createCallLogPayload(ctx context.Context, rec *waSyncAction.CallLogRecord, 
 		payload["group_jid"] = group.ToNonAD().String()
 	}
 
+	// For calls we placed, "from" is our own account; the peer is only in participants.
+	var participants []map[string]any
+	for _, part := range rec.GetParticipants() {
+		jid, err := types.ParseJID(part.GetUserJID())
+		if err != nil || jid.IsEmpty() {
+			continue
+		}
+		entry := map[string]any{
+			"jid":         NormalizeJIDFromLID(ctx, jid, client).ToNonAD().String(),
+			"call_result": strings.ToLower(part.GetCallResult().String()),
+		}
+		if jid.Server == "lid" {
+			entry["lid"] = jid.ToNonAD().String()
+		}
+		participants = append(participants, entry)
+	}
+	if len(participants) > 0 {
+		payload["participants"] = participants
+	}
+
 	startedAt := time.Now()
 	if rec.StartTime != nil {
 		startedAt = time.Unix(rec.GetStartTime(), 0)
