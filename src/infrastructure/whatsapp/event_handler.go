@@ -75,6 +75,8 @@ func handler(ctx context.Context, instance *DeviceInstance, rawEvt any) {
 		handleHistorySync(ctx, evt, chatStorageRepo, client)
 	case *events.AppState:
 		handleAppState(ctx, evt, instance.JID(), client)
+	case *events.Contact:
+		handleContactUpdate(ctx, evt, instance.ID(), instance.JID(), client)
 	case *events.GroupInfo:
 		handleGroupInfo(ctx, evt, instance.JID(), client)
 	case *events.JoinedGroup:

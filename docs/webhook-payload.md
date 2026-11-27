@@ -24,6 +24,7 @@ The following events can be received via webhook:
 | `presence`           | Online/offline status of subscribed contacts            |
 | `group.participants` | Group member join/leave/promote/demote events           |
 | `group.info`         | Group name (subject) changed                            |
+| `contact.updated`    | A saved contact's name was updated on another device    |
 | `group.joined`       | You were added to a group                               |
 | `label.edit`         | WhatsApp label metadata changed                         |
 | `label.association`  | Label applied to or removed from a chat                 |
@@ -39,6 +40,8 @@ The following events can be received via webhook:
 | `device.logged_out`  | The device was logged out, with WhatsApp's reason       |
 | `device.temporary_ban` | WhatsApp temporarily banned the account               |
 | `device.reachout_timelock` | WhatsApp restricted the account from starting new chats |
+
+For `contact.updated`, the top-level `timestamp` is the WhatsApp change time and `session_id` identifies the originating slot. The payload contains `chat_id`, `name`, and `phone_jid` when a LID resolves to a known phone JID. Initial full sync and nameless updates are skipped.
 
 ## Event Filtering
 
